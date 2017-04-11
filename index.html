@@ -228,43 +228,23 @@
     	border-radius: 50%;
     	border: 1px solid #ff7800;
     }
+
+    .article-action-m {
+    	position: fixed;
+    	z-index: 10002;
+    	width: 100%;
+    	height: 40%;
+    	top: 30%;
+    }
   </style>
 </head>
 <body>
   <div id="root" class="container">
-  	<!-- 顶导航 开始 -->
-  	<div id="top_nav" class="top-nav">
-  	  <div class="icon-back"></div>
-  	  <div class="nav-title">返回书架</div>
-  	</div>
-  	<!-- 顶导航 结束 -->
-  	<!-- 底导航 开始 -->
-  	<div class="bottom-nav-mask"></div>
-  	<div class="bottom-nav">
-  	  <div class="item">
-  	  	<div class="item-wrap">
-  	  	  <div class="icon-menu"></div>
-  	  	  <div class="icon-text">目录</div>
-  	  	</div>
-  	  </div>
-  	  <div class="item" id="font_button">
-  	  	<div class="item-wrap">
-  	  	  <div class="icon-ft"></div>
-  	  	  <div class="icon-text">字体</div>
-  	  	</div>
-  	  </div>
-  	  <div class="item" id="night_button">
-  	  	<div class="item-wrap">
-  	  	  <div class="icon-day" id="day_icon"></div>
-  	  	  <div class="icon-text" id="night_icon">白天</div>
-  	  	</div>
-  	  	<div class="item-wrap" style="display: none;">
-  	  	  <div class="icon-night"></div>
-  	  	  <div class="icon-text">夜间</div>
-  	  	</div>
-  	  </div>
-  	</div>
-  	<!-- 底导航 结束 -->
+  	<!-- 可点击区域 开始 -->
+    <div class="m-article-action">
+      <div class="article-action-m" id="action_mid"></div>
+    </div>
+    <!-- 可点击区域 结束 -->
   	<!-- 文章内容 开始-->
   	<div id="fiction_chapter_title"></div>
   	<div id="fiction_content" class="m-read-content">
@@ -282,13 +262,47 @@
   	  </ul>
   	</div>
   	<!-- 文章内容 结束 -->
+  	<!-- 顶导航 开始 -->
+  	<div id="top_nav" class="top-nav" style="display: none;">
+  	  <div class="icon-back"></div>
+  	  <div class="nav-title">返回书架</div>
+  	</div>
+  	<!-- 顶导航 结束 -->
+  	<!-- 底导航 开始 -->
+  	<div class="bottom-nav-mask js_bottom_nav" style="display: none;"></div>
+  	<div class="bottom-nav js_bottom_nav" style="display: none;">
+  	  <div class="item">
+  	  	<div class="item-wrap">
+  	  	  <div class="icon-menu"></div>
+  	  	  <div class="icon-text">目录</div>
+  	  	</div>
+  	  </div>
+  	  <div class="item" id="font_button">
+  	  	<div class="item-wrap">
+  	  	  <div class="icon-ft"></div>
+  	  	  <div class="icon-text">字体</div>
+  	  	</div>
+  	  </div>
+  	  <div class="item" id="night_button">
+  	  	<div class="item-wrap" id="day_style">
+  	  	  <div class="icon-day"></div>
+  	  	  <div class="icon-text">白天</div>
+  	  	</div>
+  	  	<div class="item-wrap"  id="night_style" style="display: none;">
+  	  	  <div class="icon-night"></div>
+  	  	  <div class="icon-text">夜间</div>
+  	  	</div>
+  	  </div>
+  	</div>
+  	<!-- 底导航 结束 -->  	
+
   	<!-- 底部操作面板 开始-->
-  	<div class="nav-pannel-mask"></div>
-  	<div class="nav-pannel" id="font-container">
+  	<div class="nav-pannel-mask font_container" style="display: none;"></div>
+  	<div class="nav-pannel font_container" style="display: none;">
   	  <div class="child-mod">
   	  	<span>字号</span>
-  	  	<button id="large-font">大</button>
-  	  	<button id="small-font">小</button>
+  	  	<button id="large_font">大</button>
+  	  	<button id="small_font">小</button>
   	  </div>
   	  <div class="child-mod">
   	  	<span>背景</span>
@@ -313,5 +327,127 @@
   	  </div>
     </div>
     <!-- 底部操作面板 结束-->
+
+    <script src="lib/jquery-3.1.1.min.js"></script>
+    <script>
+    	(function() {
+    		var Util = (function() {
+    			var prefix = 'ficiton_reader_';
+    			var StorageSetter = function(key, val) {
+    				return  localStorage.setItem(prefix + key, val)
+    			}
+    			var StorageGetter = function(key) {
+    				return  localStorage.getItem(prefix + key);
+    			}
+    			return {	
+    				StorageSetter: StorageSetter,
+    				StorageGetter: StorageGetter
+    			}
+    		})();
+
+    		var _dom = {
+	    		top_nav: $('#top_nav'),
+	    		bottom_nav: $('.js_bottom_nav'),
+	    		font_button: $('#font_button'),
+	    		font_container: $('.font_container')
+	    	}
+	    	var _win = $(window);
+	    	var _doc = $(document); 
+
+	    	// 利用本地存储初始化字体
+	    	var initFontSize = Util.StorageGetter('font_size');
+	    	initFontSize = parseInt(initFontSize);
+	    	if (!initFontSize) {
+	    		initFontSize = 14;
+	    	}
+	    	$('#fiction_content').css('font-size',initFontSize);
+
+	    	// 利用本地存储初始化背景色
+	    	var bgColor = Util.StorageGetter('bgColor');
+	    	$('#root').attr('style', bgColor)
+
+	    	// 整个项目的入口函数
+	    	function main() {
+	    		EventHanlder();
+	    	}
+
+	    	// 交互的事件绑定
+	    	function EventHanlder() {
+	    		// 触发上下导航
+	    		$('#action_mid').click(function() {
+	    			if (_dom.top_nav.css('display') === 'none') {
+	    				_dom.top_nav.show();
+	    				_dom.bottom_nav.show();
+	    			} else {
+	    				_dom.top_nav.hide();
+	    				_dom.bottom_nav.hide();
+	    				_dom.font_container.hide();
+	    				_dom.font_button.removeClass('current');
+	    			}
+	    		});
+
+				// 触发字体面板
+	    		_dom.font_button.click(function() {
+	    			if (_dom.font_container.css('display') === 'none') {
+	    				_dom.font_container.show();
+	    				_dom.font_button.addClass('current');
+	    			}else{
+	    				_dom.font_container.hide();
+	    				_dom.font_button.removeClass('current');
+	    			}
+	    		});
+
+	    		// 控制字体大小
+	    		$('#large_font').click(function() {
+	    			if (initFontSize === 20) {return}
+	    			initFontSize += 1;
+	    			$('#fiction_content').css('font-size',initFontSize);
+
+	    			Util.StorageSetter('font_size', initFontSize);
+	    		});
+	    		$('#small_font').click(function() {
+	    			if (initFontSize === 12) {return}
+	    			initFontSize -= 1;
+	    			$('#fiction_content').css('font-size', initFontSize);
+
+	    			Util.StorageSetter('font_size', initFontSize);
+	    		})
+
+	    		//控制背景色
+	    		$('.bk-container').click(function() {
+	    			$('#root').attr('style',$(this).attr('style'));
+
+	    			$('.bk-container').children().removeClass('bk-container-current');
+	    		   	$(this).children().addClass('bk-container-current');
+
+	    		   	Util.StorageSetter('bgColor', $(this).attr('style'));
+	    		});
+
+	    		// 控制白天/黑夜
+	    		$('#night_button').click(function() {
+	    			if ($('#day_style').css('display') === 'none') {
+	    				$('#day_style').show();
+	    				$('#night_style').hide()
+
+	    			}else{
+	    				$('#night_style').show();
+	    				$('#day_style').hide();
+	    			}
+	    			
+	    		});
+
+	    		_win.scroll(function() {
+	    			_dom.top_nav.hide();
+	    			_dom.bottom_nav.hide();
+	    			_dom.font_container.hide();
+	    			_dom.font_button.removeClass('current');
+	    		});
+
+	    	}
+
+	    	return main();
+	    })();
+
+    </script>
 </body>
-</html>
+</html>  
