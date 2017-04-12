@@ -347,8 +347,7 @@
     					url: url,  // 请求地址
     					cache: true,  // 缓存
     					callback: 'duokan_fiction_chapter',  // jsonp文件的
-    					// 成功之后的回调（result 是jsonp文件中duokan_fiction_chapter的内容(需解码)）
-    					
+    					// 成功之后的回调（result 是jsonp文件中duokan_fiction_chapter的内容(需解码)）   
     					success: function( result) {  
     						var data = $.base64.decode(result);   // 用$.base64插件的decode方法解码
     						var json = decodeURIComponent(escape(data));
@@ -376,7 +375,10 @@
 	    	}
 	    	var _win = $(window);
 	    	var _doc = $(document); 
-	    	var container = $('#fiction_content');
+	    	var container = $('#fiction_content');  // 内容容器
+	    	var readerModel;  // 数距层
+	    	var readerUI;    //  UI层
+
 	    	// 利用本地存储初始化字体
 	    	var initFontSize = Util.StorageGetter('font_size');
 	    	initFontSize = parseInt(initFontSize);
@@ -393,8 +395,8 @@
 	    	function main() {
 	    		EventHanlder();
 
-	    		var readerModel = ReaderModel();
-	    		var readerUI = ReaderBaseFrame(container);
+	    		readerModel = ReaderModel();
+	    		readerUI = ReaderBaseFrame(container);
 	    		readerModel.init(function(data) {
 	    		    readerUI(data);
 	    		});
@@ -474,17 +476,29 @@
 	    			_dom.font_container.hide();
 	    			_dom.font_button.removeClass('current');
 	    		});
+
+	    		// 上下翻页
+	    		$('#prev_button').click(function() {
+	    			readerModel.prevChapter(function(data) {
+	    				readerUI(data);
+	    			})
+	    		});
+	    		$('#next_button').click(function() {
+	    			readerModel.nextChapter(function(data) {
+	    				readerUI(data);
+	    			});
+	    		})
 	    	}
 
 	    	// 获取服务器端数据
 	    	function ReaderModel() {
 
-	    		var _chapter_id; // 章节的ID
+	    		var chapter_id; // 章节的ID
 
 	    		// 初始化  拿到章节信息之后回调函数再拿当前章节内容
 	    		var init = function(UIcallback) {
 	    			getFictionInfo(function() {
-	    				getCurChapterContent(_chapter_id, function(data) {
+	    				getCurChapterContent(chapter_id, function(data) {
 	    					UIcallback && UIcallback(data);
 	    				});
 	    			})
@@ -494,9 +508,12 @@
 	    		var  getFictionInfo = function(callback) {
 	    			// ajax 请求数据,请求成功后执行回调函数
 	    			$.get('data/chapter.json', function(data) {
+	    				chapter_id = Util.StorageGetter('last_chapter_id');
 
-	    				// 获得章节信息之后的回调
-	    				_chapter_id = data.chapters[1].chapter_id;
+	    				if (chapter_id == null) {
+	    					chapter_id = data.chapters[1].chapter_id;
+	    				}
+	 
 	    				callback && callback(data);
 	    			}, 'json');
 	    		}
@@ -516,11 +533,32 @@
 	    			}, 'json')
 	    		}
 
-	    		return {
-	    			init: init,
-	    		}
-	    	}
-            
+	    		// 翻页所需要的数据
+		    	var prevChapter = function(UIcallback) {
+		    		chapter_id = parseInt(chapter_id, 10);
+		    		if (chapter_id == 1) {return}
+		    		chapter_id -= 1;
+		    		getCurChapterContent(chapter_id, UIcallback);
+
+		    		Util.StorageSetter('last_chapter_id', chapter_id);
+		   		}
+		   		var nextChapter = function(UIcallback) {
+		   			chapter_id = parseInt(chapter_id, 10);
+		   			if (chapter_id == 4) {return}
+	    				chapter_id += 1;
+	    			getCurChapterContent(chapter_id, UIcallback);
+
+	    			Util.StorageSetter('last_chapter_id', chapter_id);
+
+		    	}
+
+		    	return {
+		    		init: init,
+		    		prevChapter: prevChapter,
+		    		nextChapter: nextChapter
+		    	}
+		    }
+
 	    	// 渲染UI结构
 	    	function ReaderBaseFrame(container) {
 	    		// 1、调用获得的数据并解析
